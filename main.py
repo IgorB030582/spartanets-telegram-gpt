@@ -17,15 +17,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Привет! Отправь мне сообщение, и я отвечу как ChatGPT.")
 
 # Ответ на обычное сообщение
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_message = update.message.text
-
-    try:
-        response =esponse = client.chat.completions.create(
-    model="gpt-3.5-turbo",
-    messages=[{"role": "user", "content": user_message}]
-)
-reply = response.choices[0].message.content
+try:
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": user_message}]
+    )
+    reply = response.choices[0].message.content
+ except Exception as e:
+    reply = f"Ошибка при обращении к OpenAI: {e}"
 
     await update.message.reply_text(reply)
 
