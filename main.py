@@ -43,7 +43,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"Ошибка OpenAI: {e}")
 
 # Запуск бота
-if name == "__main__":
+if __name__ == "__main__":
     app = ApplicationBuilder().token("7982853142:AAEpuHoLSCFu8EM602Mqs9Q0v0brhHe_3ow").build()
 
     app.add_handler(CommandHandler("start", start))
