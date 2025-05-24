@@ -43,7 +43,7 @@ async def handle_non_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Пожалуйста, отправьте текстовое сообщение.")
 
 # Запуск бота
-if name == "__main__":
+if __name__ == "__main__":
     if not TELEGRAM_TOKEN or not OPENAI_API_KEY or not TELEGRAM_TOKEN.strip() or not OPENAI_API_KEY.strip():
         logger.error("TELEGRAM_TOKEN или OPENAI_API_KEY не заданы или пусты.")
         raise ValueError("Ошибка: TELEGRAM_TOKEN или OPENAI_API_KEY не заданы или пусты.")
