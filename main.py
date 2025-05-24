@@ -50,5 +50,5 @@ def main() -> None:
     print("Spartanets запущен...")
     application.run_polling()
 
-if name == "__main__":
+if __name__ == "__main__":
     main()
