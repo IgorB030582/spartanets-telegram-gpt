@@ -1,7 +1,7 @@
 import os
 import openai
 from openai import OpenAI
-client = OpenAI()
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
