@@ -42,9 +42,20 @@ async def reset_limits():
         user_usage.clear()
         print("Лимиты пользователей обнулены.")
 
-# /start команда
+# Команда /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("Привет! Я Spartanets. Пиши свой вопрос — отвечу жёстко и по делу.")
+
+# Команда /stats — лимиты пользователя
+async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.message.from_user.id
+    simple_used = user_usage[user_id]["simple"]
+    deep_used = user_usage[user_id]["deep"]
+    await update.message.reply_text(
+        f"Твои лимиты на сегодня:\n"
+        f"Простые запросы: {simple_used} / {DAILY_LIMIT_SIMPLE}\n"
+        f"Глубокие запросы: {deep_used} / {DAILY_LIMIT_DEEP}"
+    )
 
 # Обработка сообщений
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -81,11 +92,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
         reply = response.choices[0].message.content if response.choices else "Нет ответа от ИИ."
 
-        # Отправка по частям, если больше 4096 символов
         for i in range(0, len(reply), 4096):
             await update.message.reply_text(reply[i:i+4096])
 
-        # Обновление лимитов
         if deep:
             user_usage[user_id]["deep"] += 1
         else:
@@ -94,14 +103,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     except Exception as e:
         await update.message.reply_text(f"Произошла ошибка: {str(e)}")
 
-# Фоновый запуск задач после запуска event loop
+# Фоновый запуск задач
 async def post_init(application: Application):
     application.create_task(reset_limits())
 
-# Запуск бота
+# Запуск
 def main() -> None:
     application = Application.builder().token(TELEGRAM_TOKEN).post_init(post_init).build()
     application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("stats", stats))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     print("Spartanets запущен...")
