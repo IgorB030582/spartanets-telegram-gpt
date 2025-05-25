@@ -42,7 +42,7 @@ async def reset_limits():
         user_usage.clear()
         print("Лимиты пользователей обнулены.")
 
-# Команда /start
+# /start команда
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("Привет! Я Spartanets. Пиши свой вопрос — отвечу жёстко и по делу.")
 
@@ -94,14 +94,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     except Exception as e:
         await update.message.reply_text(f"Произошла ошибка: {str(e)}")
 
-# Запуск
+# Фоновый запуск задач после запуска event loop
+async def post_init(application: Application):
+    application.create_task(reset_limits())
+
+# Запуск бота
 def main() -> None:
-    application = Application.builder().token(TELEGRAM_TOKEN).build()
+    application = Application.builder().token(TELEGRAM_TOKEN).post_init(post_init).build()
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-
-    # Запуск задачи сброса лимитов
-    application.create_task(reset_limits())
 
     print("Spartanets запущен...")
     application.run_polling()
