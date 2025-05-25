@@ -14,23 +14,23 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 # Системный промт
 GPT_SYSTEM_PROMPT = """
 Ты — Spartanets, наставник силы. Говоришь чётко, резко, как Вольф Ларсен.
-Твоя задача — прокачивать мышление, уверенность, стратегию. 
+Твоя задача — прокачивать мышление, уверенность, стратегию.
 Используй метафоры силы, философию стоицизма, доминирования, мышление победителя.
 Отвечай как наставник, который ведёт к трансформации.
 """
 
 # Лимиты
 DAILY_LIMIT_SIMPLE = 100
-DAILY_LIMIT_DEEP = 30
+DAILY_LIMIT_DEEP = 10  # ← изменено с 30 на 10
 
 user_usage = defaultdict(lambda: {"simple": 0, "deep": 0})
 
-# Помощник: определяет, глубокий ли запрос
+# Определение: глубокий ли запрос
 def is_deep_request(text: str) -> bool:
     emotional_words = ["страх", "боль", "потеря", "наставник", "я не знаю", "уверенность", "мотивация", "что делать", "не могу", "помоги"]
     return len(text) > 100 or any(word in text.lower() for word in emotional_words)
 
-# Команда /start
+# /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("Привет! Я Spartanets. Пиши свой вопрос — отвечу жёстко и по делу.")
 
@@ -44,7 +44,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     # Проверка лимитов
     if deep:
         if user_usage[user_id]["deep"] >= DAILY_LIMIT_DEEP:
-            await update.message.reply_text("Лимит глубоких запросов на сегодня исчерпан (30/30).")
+            await update.message.reply_text("Лимит глубоких запросов на сегодня исчерпан (10/10).")
             return
     else:
         if user_usage[user_id]["simple"] >= DAILY_LIMIT_SIMPLE:
@@ -55,19 +55,21 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     try:
         model = "gpt-4o" if deep else "gpt-3.5-turbo"
+        max_tokens = 1000 if deep else 300
+
         response = client.chat.completions.create(
             model=model,
             messages=[
                 {"role": "system", "content": GPT_SYSTEM_PROMPT},
                 {"role": "user", "content": user_message}
             ],
-            max_tokens=1000,
+            max_tokens=max_tokens,
             temperature=0.9
         )
         reply = response.choices[0].message.content
         await update.message.reply_text(reply)
 
-        # Обновление лимита
+        # Обновление лимитов
         if deep:
             user_usage[user_id]["deep"] += 1
         else:
