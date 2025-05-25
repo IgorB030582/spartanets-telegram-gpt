@@ -2,6 +2,8 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from openai import OpenAI
 from collections import defaultdict
+import asyncio
+import datetime
 import re
 
 # Твои токены
@@ -21,7 +23,7 @@ GPT_SYSTEM_PROMPT = """
 
 # Лимиты
 DAILY_LIMIT_SIMPLE = 100
-DAILY_LIMIT_DEEP = 10  # ← изменено с 30 на 10
+DAILY_LIMIT_DEEP = 10
 
 user_usage = defaultdict(lambda: {"simple": 0, "deep": 0})
 
@@ -30,7 +32,17 @@ def is_deep_request(text: str) -> bool:
     emotional_words = ["страх", "боль", "потеря", "наставник", "я не знаю", "уверенность", "мотивация", "что делать", "не могу", "помоги"]
     return len(text) > 100 or any(word in text.lower() for word in emotional_words)
 
-# /start
+# Сброс лимитов каждый день в полночь
+async def reset_limits():
+    while True:
+        now = datetime.datetime.now()
+        next_reset = (now + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        wait_time = (next_reset - now).total_seconds()
+        await asyncio.sleep(wait_time)
+        user_usage.clear()
+        print("Лимиты пользователей обнулены.")
+
+# Команда /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("Привет! Я Spartanets. Пиши свой вопрос — отвечу жёстко и по делу.")
 
@@ -66,8 +78,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             max_tokens=max_tokens,
             temperature=0.9
         )
-        reply = response.choices[0].message.content
-        await update.message.reply_text(reply)
+
+        reply = response.choices[0].message.content if response.choices else "Нет ответа от ИИ."
+
+        # Отправка по частям, если больше 4096 символов
+        for i in range(0, len(reply), 4096):
+            await update.message.reply_text(reply[i:i+4096])
 
         # Обновление лимитов
         if deep:
@@ -83,6 +99,10 @@ def main() -> None:
     application = Application.builder().token(TELEGRAM_TOKEN).build()
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    # Запуск задачи сброса лимитов
+    application.create_task(reset_limits())
+
     print("Spartanets запущен...")
     application.run_polling()
 
